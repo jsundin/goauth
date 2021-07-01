@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
 )
 
 type AppConfig struct {
-	Port     int    `default:"8080"`
-	Realm    string `default:"goauth"`
-	LogLevel string `default:"info"`
+	Port     int           `default:"8080"`
+	Realm    string        `default:"goauth"`
+	LogLevel string        `default:"info"`
+	TTL      time.Duration `default:"120s"`
 }
 
 const (
@@ -68,13 +70,20 @@ func main() {
 	} else {
 		log.SetLevel(logLevel)
 	}
+	log.Debug("application started...")
 
 	ldapConf := &LdapAuthenticatorConfig{}
 	if err := envconfig.Process("goauth_ldap", ldapConf); err != nil {
 		log.Panic(err)
 	}
 
-	var auther Authenticator = ldapConf
+	var auther Authenticator
+	if conf.TTL == 0 {
+		auther = ldapConf
+	} else {
+		auther = NewCachedAuthenticator(ldapConf, conf.TTL)
+	}
+
 	http.HandleFunc("/auth", func(rw http.ResponseWriter, r *http.Request) {
 		authenticationHandler(auther, conf.Realm, rw, r)
 	})
