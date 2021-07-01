@@ -1,6 +1,9 @@
 # goauth
 
-## Configuration
+Designed to work with Traefik's forwardauth - <https://doc.traefik.io/traefik/middlewares/forwardauth/>
+
+## Application
+### Configuration
 Environment variables:
 | Variable | Type | Default | Description |
 |-|-|-|-|
@@ -18,10 +21,32 @@ Environment variables:
 | `GOAUTH_LDAP_GROUP_MEMBERATTRIBUTE` | string | `memberUid` | Membership attribute in group
 | `GOAUTH_GROUPS` | []string | | Comma-separated list of required groups for all users
 
-## Authentication request
+### Example docker-compose
+```yaml
+version: "3"
+
+services:
+    goauth:
+        image: goauth
+        container_name: goauth
+        hostname: goauth
+        restart: unless-stopped
+        ports:
+            - 8080:8080
+        environment:
+            - GOAUTH_REALM=Local network
+            - GOAUTH_LDAP_HOSTNAME=ldap.server.com
+            - GOAUTH_LDAP_BASEDN=ou=people,dc=server,dc=com
+            - GOAUTH_LDAP_GROUP_DN=ou=groups,dc=server,dc=com
+        volumes:
+            - path/to/myCA.crt:/etc/ssl/certs/myCA.pem
+```
+
+## Usage
+### Authentication request
 `GET /auth?[groups=group1,group2,...]`
 
-### Parameters
+#### Parameters
 | Type | Name | Description |
 |-|-|-|
 | Header | `Authorization` | Regular basic auth header
