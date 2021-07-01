@@ -28,18 +28,18 @@ type LdapAuthenticatorConfig struct {
 	Groups []string
 }
 
-func (conf *LdapAuthenticatorConfig) Authenticate(user, pass string, extraGroups []string) bool {
+func (conf *LdapAuthenticatorConfig) Authenticate(user, pass string, extraGroups []string) int {
 	conn, err := conf.getConnection()
 	if err != nil {
 		log.Errorf("could not connect to ldap server: %v", err)
-		return false
+		return AuthError
 	}
 	defer conn.Close()
 
 	ldapUser, err := conf.findOneItem(conn, conf.BaseDN, strings.ReplaceAll(conf.Filter, "%s", user), ldap.ScopeWholeSubtree)
 	if err != nil {
 		log.Debugf("could not find user '%v': %v", user, err)
-		return false
+		return AuthFailed
 	}
 	uid := ldapUser.GetAttributeValue(conf.NameAttribute)
 	if uid != user {
@@ -49,22 +49,22 @@ func (conf *LdapAuthenticatorConfig) Authenticate(user, pass string, extraGroups
 	err = conf.checkRequiredGroups(conn, user, conf.Groups)
 	if err != nil {
 		log.Debugf("user '%s' does not have all required global groups: %v", user, err)
-		return false
+		return AuthFailed
 	}
 
 	err = conf.checkRequiredGroups(conn, user, extraGroups)
 	if err != nil {
 		log.Debugf("user '%s' does not have all required local groups: %v", user, err)
-		return false
+		return AuthFailed
 	}
 
 	err = conn.Bind(ldapUser.DN, pass)
 	if err != nil {
 		log.Debugf("bind failed for user '%v': %v", ldapUser.DN, err)
-		return false
+		return AuthFailed
 	}
 
-	return true
+	return AuthSuccess
 }
 
 func (conf *LdapAuthenticatorConfig) getConnection() (*ldap.Conn, error) {
