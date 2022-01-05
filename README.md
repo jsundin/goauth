@@ -1,6 +1,6 @@
 # goauth
 
-Designed to work with Traefik's forwardauth - <https://doc.traefik.io/traefik/middlewares/forwardauth/>
+Designed to work with Traefik's forwardauth - <https://doc.traefik.io/traefik/v2.0/middlewares/forwardauth/>
 
 ## Application
 ### Configuration
